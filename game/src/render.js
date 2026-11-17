@@ -11,9 +11,9 @@ export const SCREEN_PAUSED = 'paused';
 export const SCREEN_OVER = 'over';
 
 const STAR_LAYERS = [
-  { count: 70, speed: 12, size: 1, alpha: 0.5 },
-  { count: 46, speed: 30, size: 1.6, alpha: 0.75 },
-  { count: 22, speed: 60, size: 2.4, alpha: 1 },
+  { count: 96, speed: 12, size: 1, alpha: 0.6 },
+  { count: 64, speed: 30, size: 1.6, alpha: 0.85 },
+  { count: 32, speed: 60, size: 2.4, alpha: 1 },
 ];
 
 export function createRenderer(canvas) {
@@ -246,7 +246,12 @@ export function createRenderer(canvas) {
     ctx.textAlign = 'center';
     ctx.fillStyle = PALETTE.text;
     ctx.font = `bold 20px ${FONT}`;
-    ctx.fillText(world.wave === 0 ? 'GET READY' : `WAVE ${world.wave}`, FIELD.width / 2, 28);
+    const hostiles = world.enemies.length + world.spawnQueue.length;
+    ctx.fillText(
+      world.wave === 0 ? 'GET READY' : `WAVE ${world.wave}${hostiles > 0 ? ` · ${hostiles} LEFT` : ''}`,
+      FIELD.width / 2,
+      28,
+    );
     if (world.combo > 1) {
       ctx.fillStyle = '#ff9f1c';
       ctx.font = `bold 18px ${FONT}`;
@@ -320,7 +325,8 @@ export function createRenderer(canvas) {
     ctx.fillText('Fly with WASD or Arrow keys — hold SPACE or CLICK to fire', FIELD.width / 2, 330);
     ctx.fillText('X or RIGHT-CLICK spends a bomb  •  P pauses  •  M mutes', FIELD.width / 2, 360);
     ctx.fillStyle = PALETTE.gold;
-    ctx.fillText('Blast the swarm. Chain kills for combos. Break the Void Maw every 5th wave.', FIELD.width / 2, 400);
+    ctx.fillText('Blast the swarm. Chain kills for combos. Graze bullets for bonus points.', FIELD.width / 2, 400);
+    ctx.fillText('Break the Void Maw every 5th wave.', FIELD.width / 2, 428);
     const blink = Math.sin(world.time * 4) > -0.2;
     if (blink) {
       ctx.fillStyle = '#ffffff';

@@ -45,6 +45,16 @@ function saveBest(value) {
 
 function runShot(name) {
   const scene = stageShot(name, world, stepWorld);
+  // What the staged frame holds, for checking the shot shows a busy game.
+  window.__shotInfo = {
+    screen: scene.screen,
+    wave: world.wave,
+    score: world.score,
+    kills: world.kills,
+    lives: world.lives,
+    enemies: world.enemies.length,
+    combo: world.combo,
+  };
   let painted = 0;
   function paint() {
     renderer.draw(world, scene.screen, scene.best);

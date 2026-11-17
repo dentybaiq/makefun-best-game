@@ -42,6 +42,9 @@ export const WAVE = {
 /** Combo: each kill adds one; it decays after a few seconds without a kill. */
 export const COMBO = { window: 4.0, step: 0.1, cap: 5.0 };
 
+/** A near miss pays: a bullet that brushes the ship without hitting it scores. */
+export const GRAZE = { radius: 46, points: 25 };
+
 export const POWERUP = {
   radius: 13,
   fallSpeed: 70,

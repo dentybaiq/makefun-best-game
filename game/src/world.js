@@ -2,7 +2,7 @@
 // bullets, the score and the waves — and steps it in fixed 1/60 s slices. The renderer
 // paints it; this file decides what happens. Events are a bitmask the loop reads.
 
-import { COMBO, FIELD, LIVES, PLAYER, POWERUP, WAVE } from './config.js';
+import { COMBO, FIELD, GRAZE, LIVES, PLAYER, POWERUP, WAVE } from './config.js';
 import { ACTION_BOMB } from './input.js';
 import {
   addFloater,
@@ -167,6 +167,27 @@ function hurtPlayer(world, audio) {
   return EVENT_HIT;
 }
 
+/**
+ * Score near misses: an enemy bullet that enters the graze ring around the ship and
+ * leaves it again without hitting scores. A bullet that goes on to hit never pays,
+ * so the reward is for flying close, not for standing in the way.
+ */
+function scoreGraze(world) {
+  const player = world.player;
+  for (const bullet of world.enemyBullets) {
+    const dx = bullet.x - player.x;
+    const dy = bullet.y - player.y;
+    const reach = GRAZE.radius + bullet.radius;
+    const inside = dx * dx + dy * dy < reach * reach;
+    if (inside) bullet.near = true;
+    else if (bullet.near) {
+      bullet.near = false;
+      world.score += GRAZE.points;
+      addFloater(world, player.x, player.y - 34, `+${GRAZE.points} GRAZE`, '#7df9ff');
+    }
+  }
+}
+
 function collide(world, audio) {
   const player = world.player;
   // Player bullets against enemies.
@@ -190,6 +211,8 @@ function collide(world, audio) {
   for (const enemy of dead) killEnemy(world, enemy, audio);
   world.enemies = world.enemies.filter((e) => e.hp > 0);
   if (!player.alive) return 0;
+  // Near misses pay out before the bullets that go on to hit are spent.
+  scoreGraze(world);
   // Enemies and their bullets against the player.
   let events = 0;
   for (const enemy of world.enemies) {

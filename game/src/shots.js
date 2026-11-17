@@ -9,9 +9,18 @@ import { EVENT_OVER, resetWorld } from './world.js';
 import { SCREEN_OVER, SCREEN_PLAY, SCREEN_TITLE } from './render.js';
 
 const START_SECONDS = 5;
-const PLAY_SECONDS = 26;
+const PLAY_LIMIT_SECONDS = 90;
+/** The play shot stops at the first busy mid-wave moment, not at a fixed clock time. */
+const PLAY_MIN_WAVE = 3;
+const PLAY_MIN_ENEMIES = 6;
+const PLAY_MIN_COMBO = 2;
 const END_LIMIT_SECONDS = 300;
+/** The end shot first plays a real run into wave 3, then stops dodging. */
+const END_SKILLED_SECONDS = 90;
+const END_MIN_WAVE = 3;
 const BOSS_LIMIT_SECONDS = 400;
+/** Seconds of boss fight after the Void Maw parks at the top of the field. */
+const BOSS_FIGHT_SECONDS = 12;
 
 const silentAudio = {
   shoot() {},
@@ -123,7 +132,7 @@ export function stageShot(name, world, stepWorld) {
       const events = stepWorld(world, STEP, autopilot(world, 1), silentAudio, false);
       if (events & EVENT_OVER) break;
       if (world.boss && world.boss.y > 100) {
-        for (let extra = 0; extra < 8 / STEP; extra += 1) {
+        for (let extra = 0; extra < BOSS_FIGHT_SECONDS / STEP; extra += 1) {
           stepWorld(world, STEP, autopilot(world, 1), silentAudio, false);
         }
         break;
@@ -131,11 +140,35 @@ export function stageShot(name, world, stepWorld) {
     }
     return { screen: world.lives <= 0 ? SCREEN_OVER : SCREEN_PLAY, best: world.score };
   }
-  const limit = name === 'end' ? END_LIMIT_SECONDS : PLAY_SECONDS;
-  const skill = name === 'end' ? 0 : 1;
-  for (let index = 0; index < limit / STEP; index += 1) {
-    const events = stepWorld(world, STEP, autopilot(world, skill), silentAudio, false);
+  if (name === 'play') {
+    // Stop at the first busy moment of wave 3 or later: a swarm on screen, a combo
+    // running, score floaters in the air — not a lull between waves.
+    for (let index = 0; index < PLAY_LIMIT_SECONDS / STEP; index += 1) {
+      const events = stepWorld(world, STEP, autopilot(world, 1), silentAudio, false);
+      if (events & EVENT_OVER) break;
+      if (
+        world.wave >= PLAY_MIN_WAVE &&
+        world.enemies.length >= PLAY_MIN_ENEMIES &&
+        world.combo >= PLAY_MIN_COMBO
+      ) {
+        break;
+      }
+    }
+    const over = world.lives <= 0;
+    return { screen: over ? SCREEN_OVER : SCREEN_PLAY, best: world.score };
+  }
+  // The end shot is a real run's game over: play well into wave 3, then stand still
+  // and let the swarm finish the ship, so the results screen shows waves and kills.
+  for (let index = 0; index < END_SKILLED_SECONDS / STEP; index += 1) {
+    const events = stepWorld(world, STEP, autopilot(world, 1), silentAudio, false);
     if (events & EVENT_OVER) break;
+    if (world.wave >= END_MIN_WAVE) break;
+  }
+  if (world.lives > 0) {
+    for (let index = 0; index < END_LIMIT_SECONDS / STEP; index += 1) {
+      const events = stepWorld(world, STEP, autopilot(world, 0), silentAudio, false);
+      if (events & EVENT_OVER) break;
+    }
   }
   const over = world.lives <= 0;
   return { screen: over ? SCREEN_OVER : SCREEN_PLAY, best: world.score };
